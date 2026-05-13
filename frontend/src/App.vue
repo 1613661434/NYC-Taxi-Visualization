@@ -28,14 +28,14 @@ export default {
       const res = await axios.get("http://127.0.0.1:8000/api/taxi-data")
       const data = res.data
 
-      // 图表1：公司对比（修复键名大小写问题！）
+      // 图表1：公司对比
       const c1 = echarts.init(chart1.value)
       c1.setOption({
         title: { text: "Green vs Yellow 订单量" },
         xAxis: { data: ["Green", "Yellow"] },
         yAxis: {},
         series: [{ 
-          data: [data.company_count.Green, data.company_count.Yellow], // 修复：首字母大写
+          data: [data.company_count.Green, data.company_count.Yellow],
           type: "bar" 
         }]
       })

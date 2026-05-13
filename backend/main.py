@@ -23,7 +23,7 @@ def load_and_clean_data():
     green_df = pd.read_parquet(DATA_BASE + "green/green_tripdata_2018-01.parquet").sample(5000)
     yellow_df = pd.read_parquet(DATA_BASE + "yellow/yellow_tripdata_2018-01.parquet").sample(5000)
 
-    # 2. 【修复】给数据添加公司标签（解决 KeyError）
+    # 2. 给数据添加公司标签
     green_df["company"] = "Green"
     yellow_df["company"] = "Yellow"
 
