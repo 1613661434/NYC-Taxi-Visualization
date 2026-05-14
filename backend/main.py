@@ -18,11 +18,11 @@ app.add_middleware(
 
 # ===================== 核心配置（适配你的目录结构） =====================
 CONFIG = {
-    "raw_data_dir": "./data",
-    "clean_data_dir": "./data/clean_data",
-    "zone_file_path": "./data/taxi_zone_lookup.csv",
+    "raw_data_dir": "../data",
+    "clean_data_dir": "../data/clean_data",
+    "zone_file_path": "../data/taxi_zone_lookup.csv",
     "target_year": 2018,
-    "sample_size": None  # 关闭抽样，清洗全部数据
+    "sample_size": 10000  # 抽样
 }
 
 # 列名映射配置
