@@ -482,17 +482,37 @@ const renderAllCharts = (data) => {
 
   // 10. 黄绿车核心指标对比柱状图
   if (avgCompareChart.value) {
-    chartInstances.avgComp = echarts.init(avgCompareChart.value)
-    chartInstances.avgComp.setOption({
-      xAxis: { type: 'category', data: ['平均费用 ($)', '平均距离 (mi)', '平均小费 ($)'] },
-      yAxis: { type: 'value' },
-      series: [
-        { name: '黄色出租车', type: 'bar', data: [comp.平均费用?.黄色出租车 || 0, comp.平均距离?.黄色出租车 || 0, comp.平均小费?.黄色出租车 || 0], color: '#F59E0B', label: { show: true, position: 'top', fontWeight: 'bold' } },
-        { name: '绿色出租车', type: 'bar', data: [comp.平均费用?.绿色出租车 || 0, comp.平均距离?.绿色出租车 || 0, comp.平均小费?.绿色出租车 || 0], color: '#10B981', label: { show: true, position: 'top', fontWeight: 'bold' } }
-      ],
-      legend: { data: ['黄色出租车', '绿色出租车'], textStyle: { color: '#E5E7EB' }, top: 0, right: 0 }
-    })
-  }
+  chartInstances.avgComp = echarts.init(avgCompareChart.value)
+  // 兼容中英文字段 + 空值兜底
+  const yellowFare = comp.平均费用?.['黄色出租车'] || comp.平均费用?.Yellow || 0
+  const greenFare = comp.平均费用?.['绿色出租车'] || comp.平均费用?.Green || 0
+  const yellowDist = comp.平均距离?.['黄色出租车'] || comp.平均距离?.Yellow || 0
+  const greenDist = comp.平均距离?.['绿色出租车'] || comp.平均距离?.Green || 0
+  const yellowTip = comp.平均小费?.['黄色出租车'] || comp.平均小费?.Yellow || 0
+  const greenTip = comp.平均小费?.['绿色出租车'] || comp.平均小费?.Green || 0
+
+  chartInstances.avgComp.setOption({
+    xAxis: { type: 'category', data: ['平均费用 ($)', '平均距离 (mi)', '平均小费 ($)'] },
+    yAxis: { type: 'value' },
+    series: [
+      { 
+        name: '黄色出租车', 
+        type: 'bar', 
+        data: [yellowFare, yellowDist, yellowTip], 
+        color: '#F59E0B', 
+        label: { show: true, position: 'top', fontWeight: 'bold', formatter: (p) => p.value.toFixed(1) } 
+      },
+      { 
+        name: '绿色出租车', 
+        type: 'bar', 
+        data: [greenFare, greenDist, greenTip], 
+        color: '#10B981', 
+        label: { show: true, position: 'top', fontWeight: 'bold', formatter: (p) => p.value.toFixed(1) } 
+      }
+    ],
+    legend: { data: ['黄色出租车', '绿色出租车'], textStyle: { color: '#E5E7EB' }, top: 0, right: 0 }
+  })
+}
 
   // 11. 相关性热力图
   const corrMatrix = data.correlation || {}

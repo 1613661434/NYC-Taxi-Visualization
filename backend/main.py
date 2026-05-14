@@ -74,9 +74,12 @@ def get_dashboard(
         "period_dist": pd.cut(df["小时"], [0,6,10,16,20,24], labels=["深夜","早高峰","白天","晚高峰","夜间"]).value_counts().to_dict(),
         "passenger_dist": df["乘客数量"].value_counts().sort_index().to_dict(),
         "yellow_green_comparison": {
-            "平均费用": df.groupby("车型")["修正后总费用"].mean().round(1).to_dict(),
-            "平均距离": df.groupby("车型")["行程距离"].mean().round(1).to_dict(),
-            "平均小费": df.groupby("车型")["小费"].mean().round(1).to_dict()
+            "平均费用": df.groupby("车型")["修正后总费用"].mean().round(1)
+                .rename(index={"Yellow": "黄色出租车", "Green": "绿色出租车"}).to_dict(),
+            "平均距离": df.groupby("车型")["行程距离"].mean().round(1)
+                .rename(index={"Yellow": "黄色出租车", "Green": "绿色出租车"}).to_dict(),
+            "平均小费": df.groupby("车型")["小费"].mean().round(1)
+                .rename(index={"Yellow": "黄色出租车", "Green": "绿色出租车"}).to_dict()
         },
         "correlation": df[["行程距离", "车费", "小费", "乘客数量", "修正后总费用"]].corr().round(2).to_dict()
     }
