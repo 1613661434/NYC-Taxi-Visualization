@@ -4,7 +4,7 @@
 		{
 			"label": "启动后端服务",
 			"type": "shell",
-			"command": "cd backend && uvicorn main:app --reload",
+			"command": "cd backend ; uvicorn main:app --reload",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -14,7 +14,7 @@
 		{
 			"label": "启动前端服务",
 			"type": "shell",
-			"command": "cd frontend && npm run dev",
+			"command": "cd frontend ; npm run dev",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
@@ -24,7 +24,7 @@
 		{
 			"label": "运行数据清洗脚本",
 			"type": "shell",
-			"command": "cd backend && python clean_data.py",
+			"command": "cd backend ; python clean_data.py",
 			"options": {
 				"cwd": "${workspaceFolder}"
 			},
