@@ -1,13 +1,10 @@
 <template>
   <div class="dashboard">
-    <!-- 背景装饰 -->
     <div class="bg"></div>
 
-    <!-- 头部信息区 -->
     <div class="header">
       <div class="title-box">
         <h1>🗽 纽约出租车数据驾驶舱</h1>
-        <!-- 动态显示选择的月份区间 -->
         <p>2018年 {{ startMonth }}-{{ endMonth }}月 · NYC TLC开放数据 · 黄色出租车 vs 绿色出租车</p>
       </div>
       <div class="date-box">
@@ -16,7 +13,6 @@
       </div>
     </div>
 
-    <!-- 全局说明卡片 -->
     <div class="info-card">
       <div class="info-icon">ℹ️</div>
       <div class="info-text">
@@ -26,19 +22,16 @@
       </div>
     </div>
 
-    <!-- KPI 卡片行（6个核心指标） -->
     <div class="kpi-grid">
       <div class="kpi-card" v-for="(item, idx) in kpiList" :key="idx">
         <div class="kpi-icon">{{ item.icon }}</div>
         <div class="kpi-number">{{ formatNumber(item.value) }}<span class="kpi-unit">{{ item.unit }}</span></div>
         <div class="kpi-label">{{ item.label }}</div>
-        <!-- 修复：删除无用的 较上月 趋势（单年份无此数据） -->
       </div>
     </div>
 
-    <!-- 筛选工具栏 + 新增月份筛选 -->
+    <!-- 筛选栏：已删除费用筛选，修复行政区下拉 -->
     <div class="filter-toolbar">
-      <!-- 新增：月份区间筛选 -->
       <div class="filter-group">
         <label>月份区间：</label>
         <select v-model="startMonth" @change="applyFilters" style="width:70px">
@@ -62,22 +55,14 @@
         <label>行政区：</label>
         <select v-model="filters.borough" @change="applyFilters">
           <option value="">全部</option>
-          <option v-for="b in boroughOptions" :key="b" :value="b">{{ b }}</option>
+          <option v-for="b in originalBoroughOptions" :key="b" :value="b">{{ b }}</option>
         </select>
       </div>
-      <div class="filter-group">
-        <label>最低费用($)：</label>
-        <input type="number" v-model.number="filters.minFare" step="5" @change="applyFilters" placeholder="0">
-      </div>
-      <div class="filter-group">
-        <label>最高费用($)：</label>
-        <input type="number" v-model.number="filters.maxFare" step="5" @change="applyFilters" placeholder="200">
-      </div>
+
       <button class="reset-btn" @click="resetFilters">重置筛选</button>
       <div class="filter-note">※ 筛选后全图表联动刷新</div>
     </div>
 
-    <!-- 第一行图表：24小时趋势 + 车型占比 + 雷达图 -->
     <div class="chart-row">
       <div class="chart-card large">
         <div class="card-title">📊 24小时出行趋势</div>
@@ -100,7 +85,6 @@
       </div>
     </div>
 
-    <!-- 第二行图表：行政区排行 + 费用等级 + 支付方式 -->
     <div class="chart-row">
       <div class="chart-card">
         <div class="card-title">📍 行政区热度排行 TOP5</div>
@@ -119,7 +103,6 @@
       </div>
     </div>
 
-    <!-- 第三行图表：周趋势 + 时段分布 + 乘客数 -->
     <div class="chart-row">
       <div class="chart-card large">
         <div class="card-title">📅 一周出行规律</div>
@@ -138,7 +121,6 @@
       </div>
     </div>
 
-    <!-- 第四行：黄绿车核心指标对比柱状图 + 相关性热力图 -->
     <div class="chart-row">
       <div class="chart-card">
         <div class="card-title">⚖️ 黄色 vs 绿色 核心指标对比</div>
@@ -152,7 +134,6 @@
       </div>
     </div>
 
-    <!-- 底部页脚 -->
     <div class="footer">
       <div class="footer-line"></div>
       <div class="footer-text">
@@ -162,7 +143,6 @@
       </div>
     </div>
 
-    <!-- 加载遮罩 -->
     <div v-if="loading" class="loader-overlay">
       <div class="loader"></div>
       <div class="loader-text">正在加载2018年数据，请稍候...</div>
@@ -175,17 +155,14 @@ import { ref, reactive, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import * as echarts from 'echarts'
 
-// ---------- 响应式数据 ----------
 const loading = ref(true)
 const currentDate = ref('')
 const currentTime = ref('')
 let timer = null
 
-// 新增：月份筛选变量（默认1-12月）
 const startMonth = ref(1)
 const endMonth = ref(12)
 
-// 图表refs
 const hourlyChart = ref(null)
 const companyChart = ref(null)
 const radarChart = ref(null)
@@ -200,7 +177,6 @@ const corrChart = ref(null)
 
 let chartInstances = {}
 
-// KPI数据（修复：删除无用的trend较上月数据）
 const kpiList = ref([
   { icon: '🚕', label: '总订单量', value: 0, unit: '单' },
   { icon: '💰', label: '总营收', value: 0, unit: '万美元' },
@@ -211,22 +187,17 @@ const kpiList = ref([
 ])
 
 const companyStats = ref({ yellow: 0, green: 0 })
-const boroughOptions = ref([])
+// 修复：保存原始行政区列表（永远显示全部选项）
+const originalBoroughOptions = ref([])
 
-// 筛选条件
+// 筛选条件：已删除费用相关
 const filters = reactive({
   company: '',
-  borough: '',
-  minFare: null,
-  maxFare: null,
-  startHour: 0,
-  endHour: 23
+  borough: ''
 })
 
-// 全局 dashboard 原始数据
 let fullDashboardData = null
 
-// ---------- 工具函数 ----------
 const formatNumber = (num) => {
   if (num === undefined || num === null) return '0'
   if (num >= 10000) return (num / 10000).toFixed(1) + 'w'
@@ -239,33 +210,27 @@ const updateDateTime = () => {
   currentTime.value = now.toLocaleTimeString('zh-CN', { hour12: false })
 }
 
-// ---------- 核心：月份自动校正（大月→小月 自动交换） ----------
 const fixMonthOrder = () => {
   if (startMonth.value > endMonth.value) {
     [startMonth.value, endMonth.value] = [endMonth.value, startMonth.value]
   }
 }
 
-// ---------- 数据加载 + 月份筛选 ----------
+// 数据加载：已删除费用参数
 const loadDashboardData = async () => {
-  // 先校正月份顺序
   fixMonthOrder()
   
   try {
-    // ✅ 关键修改：携带所有筛选参数请求后端
     const res = await axios.get('http://127.0.0.1:8000/api/dashboard-data', {
       params: {
         start_month: startMonth.value,
         end_month: endMonth.value,
-        company: filters.company,       // 车型
-        borough: filters.borough,       // 行政区
-        min_fare: filters.minFare,      // 最低费用
-        max_fare: filters.maxFare       // 最高费用
+        company: filters.company,
+        borough: filters.borough
       }
     })
     fullDashboardData = res.data
 
-    // 更新KPI
     const k = fullDashboardData.kpi || {}
     kpiList.value[0].value = k.总行程数 || 0
     kpiList.value[1].value = k['总营收(万美元)'] || 0
@@ -274,14 +239,14 @@ const loadDashboardData = async () => {
     kpiList.value[4].value = k['平均费用($)'] || 0
     kpiList.value[5].value = k['晚高峰占比(%)'] || 0
 
-    // 车型统计
     companyStats.value.yellow = fullDashboardData.company_compare?.黄色出租车 || 0
     companyStats.value.green = fullDashboardData.company_compare?.绿色出租车 || 0
 
-    // 行政区下拉选项
-    boroughOptions.value = Object.keys(fullDashboardData.borough_dist || {})
+    // 只在首次加载时保存原始行政区列表
+    if (originalBoroughOptions.value.length === 0) {
+      originalBoroughOptions.value = Object.keys(fullDashboardData.borough_dist || {})
+    }
 
-    // 渲染所有图表
     renderAllCharts(fullDashboardData)
   } catch (err) {
     console.error('数据加载失败', err)
@@ -290,29 +255,21 @@ const loadDashboardData = async () => {
   }
 }
 
-// 筛选联动（新增月份参数）
 const applyFilters = async () => {
-  fixMonthOrder() // 校正月份
-  await loadDashboardData() // 重新加载数据
+  fixMonthOrder()
+  await loadDashboardData()
 }
 
-// 重置筛选（重置月份+所有筛选条件）
+// 重置筛选：已删除费用
 const resetFilters = () => {
-  // 重置月份
   startMonth.value = 1
   endMonth.value = 12
-  // 重置其他筛选
   filters.company = ''
   filters.borough = ''
-  filters.minFare = null
-  filters.maxFare = null
-  // 重新加载
   loadDashboardData()
 }
 
-// ---------- 图表渲染（完全不变） ----------
 const renderAllCharts = (data) => {
-  // 1. 24小时趋势折线图
   const hourly = Object.entries(data.hourly_trend || {}).sort((a, b) => a[0] - b[0])
   if (hourlyChart.value) {
     chartInstances.hourly = echarts.init(hourlyChart.value)
@@ -333,7 +290,6 @@ const renderAllCharts = (data) => {
     })
   }
 
-  // 2. 车型占比环形图
   const company = data.company_compare || {}
   if (companyChart.value) {
     chartInstances.company = echarts.init(companyChart.value)
@@ -353,7 +309,6 @@ const renderAllCharts = (data) => {
     })
   }
 
-  // 3. 雷达图
   const comp = data.yellow_green_comparison || {}
   if (radarChart.value) {
     chartInstances.radar = echarts.init(radarChart.value)
@@ -380,7 +335,6 @@ const renderAllCharts = (data) => {
     })
   }
 
-  // 4. 行政区横向柱状图
   const borough = Object.entries(data.borough_dist || {}).sort((a, b) => b[1] - a[1]).slice(0, 5)
   if (boroughChart.value) {
     chartInstances.borough = echarts.init(boroughChart.value)
@@ -398,7 +352,6 @@ const renderAllCharts = (data) => {
     })
   }
 
-  // 5. 费用等级柱状图
   const fare = Object.entries(data.fare_level_dist || {})
   if (fareLevelChart.value) {
     chartInstances.fare = echarts.init(fareLevelChart.value)
@@ -415,7 +368,6 @@ const renderAllCharts = (data) => {
     })
   }
 
-  // 6. 支付方式饼图
   const payment = data.payment_dist || {}
   if (paymentChart.value) {
     chartInstances.payment = echarts.init(paymentChart.value)
@@ -432,7 +384,6 @@ const renderAllCharts = (data) => {
     })
   }
 
-  // 7. 周趋势折线图
   const week = Object.entries(data.weekday_trend || {}).sort((a, b) => a[0] - b[0])
   const weekNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
   if (weeklyChart.value) {
@@ -453,7 +404,6 @@ const renderAllCharts = (data) => {
     })
   }
 
-  // 8. 时段分布饼图
   const period = data.period_dist || {}
   if (periodChart.value) {
     chartInstances.period = echarts.init(periodChart.value)
@@ -468,7 +418,6 @@ const renderAllCharts = (data) => {
     })
   }
 
-  // 9. 乘客数量分布柱状图
   const passengers = Object.entries(data.passenger_dist || {}).sort((a, b) => a[0] - b[0])
   if (passengerChart.value) {
     chartInstances.passenger = echarts.init(passengerChart.value)
@@ -484,16 +433,14 @@ const renderAllCharts = (data) => {
     })
   }
 
-  // 10. 黄绿车核心指标对比柱状图
   if (avgCompareChart.value) {
   chartInstances.avgComp = echarts.init(avgCompareChart.value)
-  // 兼容中英文字段 + 空值兜底
-  const yellowFare = comp.平均费用?.['黄色出租车'] || comp.平均费用?.Yellow || 0
-  const greenFare = comp.平均费用?.['绿色出租车'] || comp.平均费用?.Green || 0
-  const yellowDist = comp.平均距离?.['黄色出租车'] || comp.平均距离?.Yellow || 0
-  const greenDist = comp.平均距离?.['绿色出租车'] || comp.平均距离?.Green || 0
-  const yellowTip = comp.平均小费?.['黄色出租车'] || comp.平均小费?.Yellow || 0
-  const greenTip = comp.平均小费?.['绿色出租车'] || comp.平均小费?.Green || 0
+  const yellowFare = comp.平均费用?.['黄色出租车'] || 0
+  const greenFare = comp.平均费用?.['绿色出租车'] || 0
+  const yellowDist = comp.平均距离?.['黄色出租车'] || 0
+  const greenDist = comp.平均距离?.['绿色出租车'] || 0
+  const yellowTip = comp.平均小费?.['黄色出租车'] || 0
+  const greenTip = comp.平均小费?.['绿色出租车'] || 0
 
   chartInstances.avgComp.setOption({
     xAxis: { type: 'category', data: ['平均费用 ($)', '平均距离 (mi)', '平均小费 ($)'] },
@@ -518,7 +465,6 @@ const renderAllCharts = (data) => {
   })
 }
 
-  // 11. 相关性热力图
   const corrMatrix = data.correlation || {}
   const fields = Object.keys(corrMatrix)
   if (corrChart.value && fields.length) {
@@ -538,12 +484,10 @@ const renderAllCharts = (data) => {
   }
 }
 
-// 窗口自适应
 const handleResize = () => {
   Object.values(chartInstances).forEach(ch => ch?.resize())
 }
 
-// 生命周期
 onMounted(() => {
   updateDateTime()
   timer = setInterval(updateDateTime, 1000)
@@ -559,7 +503,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-/* 样式完全保留你朋友的原版，一行未改！ */
 * {
   margin: 0;
   padding: 0;
@@ -583,7 +526,6 @@ onUnmounted(() => {
   pointer-events: none;
 }
 
-/* 头部 */
 .header {
   display: flex;
   justify-content: space-between;
@@ -628,7 +570,6 @@ onUnmounted(() => {
   color: #F3F4F6;
 }
 
-/* 全局说明卡片 */
 .info-card {
   background: rgba(59, 130, 246, 0.1);
   border-left: 4px solid #3B82F6;
@@ -655,7 +596,6 @@ onUnmounted(() => {
   color: #60A5FA;
 }
 
-/* KPI 卡片 */
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -703,17 +643,6 @@ onUnmounted(() => {
   margin: 8px 0 4px;
 }
 
-.trend-up {
-  color: #10B981;
-  font-size: 12px;
-}
-
-.trend-down {
-  color: #EF4444;
-  font-size: 12px;
-}
-
-/* 筛选栏 */
 .filter-toolbar {
   background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(8px);
@@ -769,7 +698,6 @@ onUnmounted(() => {
   margin-left: auto;
 }
 
-/* 图表行 */
 .chart-row {
   display: flex;
   gap: 20px;
@@ -829,16 +757,15 @@ onUnmounted(() => {
 }
 
 .stat-badge.yellow {
-  background: rgba(245, 158, 11, 0.15);
+  background: rgba(245,158,11,0.15);
   color: #FBBF24;
 }
 
 .stat-badge.green {
-  background: rgba(16, 185, 129, 0.15);
+  background: rgba(16,185,129,0.15);
   color: #34D399;
 }
 
-/* 底部 */
 .footer {
   margin-top: 32px;
 }
@@ -858,7 +785,6 @@ onUnmounted(() => {
   flex-wrap: wrap;
 }
 
-/* 加载动画 */
 .loader-overlay {
   position: fixed;
   top: 0;
@@ -893,7 +819,6 @@ onUnmounted(() => {
   to { transform: rotate(360deg); }
 }
 
-/* 响应式 */
 @media (max-width: 1200px) {
   .kpi-grid { grid-template-columns: repeat(3, 1fr); }
   .chart-row { flex-direction: column; }

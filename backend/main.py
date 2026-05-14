@@ -9,7 +9,6 @@ warnings.filterwarnings('ignore')
 
 app = FastAPI(title="NYC Taxi API")
 
-# 跨域配置
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -17,17 +16,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ===================== 配置 =====================
 CONFIG = {
     "clean_data_dir": "../data/clean_data",
     "zone_file_path": "../data/taxi_zone_lookup.csv",
     "sample_size": 50000,
 }
 
-# 全局内存缓存
 df_cache = None
 
-# ===================== 加载数据（已修复语法错误+自动识别车型） =====================
 def load_cleaned_data():
     global df_cache
     if df_cache is not None:
@@ -37,13 +33,9 @@ def load_cleaned_data():
     files = glob.glob(os.path.join(CONFIG["clean_data_dir"], "*.parquet"))
     
     df_list = []
-    # 遍历每个文件，从文件名提取车型
     for f in files:
-        # 先读取文件
         df_single = pd.read_parquet(f)
-        # 再抽样
         df_single = df_single.sample(min(5000, len(df_single)), random_state=1)
-        # 从文件名判断车型
         if "green" in f.lower():
             df_single["车型"] = "绿色出租车"
         elif "yellow" in f.lower():
@@ -52,45 +44,32 @@ def load_cleaned_data():
             df_single["车型"] = "未知"
         df_list.append(df_single)
     
-    # 合并所有文件数据
     df = pd.concat(df_list, ignore_index=True)
     df = df.sample(min(CONFIG["sample_size"], len(df)), random_state=1)
     
-    # 关联行政区数据
     df = df.merge(zone_df, left_on="上车区域ID", right_on="位置ID", how="left").dropna(subset=["行政区"])
     df["小时"] = df["上车时间"].dt.hour
     df["月份"] = df["上车时间"].dt.month
     df_cache = df
     return df
 
-# ===================== 大屏接口（✅ 新增筛选参数） =====================
+# 接口：已删除费用参数
 @app.get("/api/dashboard-data")
 def get_dashboard(
     start_month: int = Query(1, ge=1, le=12),
     end_month: int = Query(12, ge=1, le=12),
-    company: str = Query(""),        # 接收车型筛选
-    borough: str = Query(""),        # 接收行政区筛选
-    min_fare: float = Query(None),   # 接收最低费用
-    max_fare: float = Query(None)    # 接收最高费用
+    company: str = Query(""),
+    borough: str = Query("")
 ):
     df = load_cleaned_data()
-    # 1. 月份筛选
     df = df[(df["月份"] >= start_month) & (df["月份"] <= end_month)]
     
-    # ✅ 核心：前端筛选条件生效
-    # 车型筛选
+    # 车型 + 行政区筛选
     if company:
         df = df[df["车型"] == company]
-    # 行政区筛选
     if borough:
         df = df[df["行政区"] == borough]
-    # 费用筛选
-    if min_fare is not None:
-        df = df[df["修正后总费用"] >= min_fare]
-    if max_fare is not None:
-        df = df[df["修正后总费用"] <= max_fare]
 
-    # 空值兜底
     if df.empty:
         return {
             "kpi": {"总行程数":0,"总营收(万美元)":0,"平均小费率(%)":0,"平均行程(英里)":0,"平均费用($)":0,"晚高峰占比(%)":0},
@@ -122,10 +101,6 @@ def get_dashboard(
         },
         "correlation": df[["行程距离", "车费", "小费", "乘客数量", "修正后总费用"]].corr().round(2).to_dict()
     }
-
-@app.get("/api/filter-data")
-def filter_data():
-    return {"筛选后记录数":0,"平均费用":0,"平均距离":0}
 
 if __name__ == "__main__":
     import uvicorn
