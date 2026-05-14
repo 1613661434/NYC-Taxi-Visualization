@@ -105,46 +105,74 @@ def filter_abnormal_values(df):
     ]
     return df
 
-# ===================== 单文件清洗函数 =====================
+# ===================== 单文件清洗函数（新增原始数据条数统计） =====================
 def clean_single_taxi_file(file_path, taxi_type):
+    # 1. 加载原始数据并统计条数
     df = pd.read_parquet(file_path)
+    raw_count = len(df)  # 原始数据条数
+    
+    # 2. 字段重命名（保留所有原始列，仅映射指定列）
     rename_map = COLUMN_MAPPING[taxi_type]
     df = df.rename(columns=rename_map)
+    
+    # 3. 删除重复记录
     df = df.drop_duplicates()
+    
+    # 4. 时间字段标准化
     df = standardize_time(df)
+    
+    # 5. 缺失值处理（删除上下车时间为空）
     df = filter_valid_trips(df)
+    
+    # 6. 时间范围过滤：仅保留目标年份
     df = filter_target_year(df, CONFIG["target_year"])
+    
+    # 7. 总费用修正（核心）
     df = recalculate_total_amount(df, taxi_type)
+    
+    # 8. 异常值过滤
     df = filter_abnormal_values(df)
+    
+    # 9. 添加车型标签
     df["车型"] = taxi_type.capitalize()
-    return df
+    
+    clean_count = len(df)  # 清洗后数据条数
+    return df, raw_count, clean_count
 
 # ===================== 批量清洗 + 保存（全量数据，不抽样） =====================
 def batch_clean_taxi_data():
     create_dir_if_not_exist(CONFIG["clean_data_dir"])
     
     for taxi_type in ["green", "yellow"]:
+        # 原始数据路径
         raw_dir = os.path.join(CONFIG["raw_data_dir"], taxi_type)
+        # 匹配所有parquet文件
         parquet_files = glob.glob(os.path.join(raw_dir, "*.parquet"))
         
         if not parquet_files:
             print(f"⚠️ 未找到 {taxi_type} 车原始数据文件（路径：{raw_dir}）")
             continue
         
+        # 批量处理每个文件
         for file_path in parquet_files:
             try:
-                clean_df = clean_single_taxi_file(file_path, taxi_type)
+                # 清洗数据（获取原始条数+清洗后条数）
+                clean_df, raw_count, clean_count = clean_single_taxi_file(file_path, taxi_type)
                 
-                # 已关闭抽样，直接保存全部数据
+                # 生成保存文件名
                 file_name = os.path.basename(file_path)
                 save_file_name = f"{taxi_type}_cleaned_{file_name}"
                 save_path = os.path.join(CONFIG["clean_data_dir"], save_file_name)
                 
+                # 保存清洗后的数据（Parquet格式，节省空间）
                 clean_df.to_parquet(save_path, index=False)
-                print(f"✅ 已保存清洗后的数据：{save_path}（数据量：{len(clean_df)} 条）")
+                
+                # 输出增强日志：包含原始条数+清洗后条数
+                print(f"✅ 已保存清洗后的数据：{save_path}")
+                print(f"   📊 原始数据：{raw_count} 条 | 清洗后：{clean_count} 条 | 过滤掉：{raw_count - clean_count} 条\n")
                 
             except Exception as e:
-                print(f"❌ 处理文件 {file_path} 失败：{str(e)}")
+                print(f"❌ 处理文件 {file_path} 失败：{str(e)}\n")
 
 # ===================== 加载清洗后的数据（不合并所有文件） =====================
 def load_cleaned_data():
