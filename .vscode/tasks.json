@@ -1,0 +1,35 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "启动后端服务",
+			"type": "shell",
+			"command": "cd backend && uvicorn main:app --reload",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "启动前端服务",
+			"type": "shell",
+			"command": "cd frontend && npm run dev",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"isBackground": true,
+			"problemMatcher": []
+		},
+		{
+			"label": "运行数据清洗脚本",
+			"type": "shell",
+			"command": "cd backend && python clean_data.py",
+			"options": {
+				"cwd": "${workspaceFolder}"
+			},
+			"isBackground": false,
+			"problemMatcher": []
+		}
+	]
+}
