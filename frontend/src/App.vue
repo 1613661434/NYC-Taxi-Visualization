@@ -1,6 +1,6 @@
 <template>
   <div class="app">
-    <h1>🚕 NYC 出租车数据可视化（Vue + Python）</h1>
+    <h1>🚕 NYC 出租车数据可视化</h1>
     <div class="charts">
       <!-- 1. 公司订单对比 -->
       <div class="chart" ref="chart1"></div>

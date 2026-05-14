@@ -16,13 +16,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ===================== 核心配置（适配你的目录结构） =====================
+# ===================== 核心配置 =====================
 CONFIG = {
-    "raw_data_dir": "./data",
-    "clean_data_dir": "./data/clean_data",
-    "zone_file_path": "./data/taxi_zone_lookup.csv",
+    "raw_data_dir": "../data",
+    "clean_data_dir": "../data/clean_data",
+    "zone_file_path": "../data/taxi_zone_lookup.csv",
     "target_year": 2018,
-    "sample_size": None  # 关闭抽样，清洗全部数据
+    "sample_size": 10000,  # 加载1万条样本数据
 }
 
 # 列名映射配置
@@ -105,78 +105,48 @@ def filter_abnormal_values(df):
     ]
     return df
 
-# ===================== 单文件清洗函数（新增原始数据条数统计） =====================
+# ===================== 单文件清洗函数 =====================
 def clean_single_taxi_file(file_path, taxi_type):
-    # 1. 加载原始数据并统计条数
     df = pd.read_parquet(file_path)
-    raw_count = len(df)  # 原始数据条数
+    raw_count = len(df)
     
-    # 2. 字段重命名（保留所有原始列，仅映射指定列）
     rename_map = COLUMN_MAPPING[taxi_type]
     df = df.rename(columns=rename_map)
-    
-    # 3. 删除重复记录
     df = df.drop_duplicates()
-    
-    # 4. 时间字段标准化
     df = standardize_time(df)
-    
-    # 5. 缺失值处理（删除上下车时间为空）
     df = filter_valid_trips(df)
-    
-    # 6. 时间范围过滤：仅保留目标年份
     df = filter_target_year(df, CONFIG["target_year"])
-    
-    # 7. 总费用修正（核心）
     df = recalculate_total_amount(df, taxi_type)
-    
-    # 8. 异常值过滤
     df = filter_abnormal_values(df)
-    
-    # 9. 添加车型标签
     df["车型"] = taxi_type.capitalize()
     
-    clean_count = len(df)  # 清洗后数据条数
+    clean_count = len(df)
     return df, raw_count, clean_count
 
-# ===================== 批量清洗 + 保存（全量数据，不抽样） =====================
+# ===================== 批量清洗 =====================
 def batch_clean_taxi_data():
     create_dir_if_not_exist(CONFIG["clean_data_dir"])
     
     for taxi_type in ["green", "yellow"]:
-        # 原始数据路径
         raw_dir = os.path.join(CONFIG["raw_data_dir"], taxi_type)
-        # 匹配所有parquet文件
         parquet_files = glob.glob(os.path.join(raw_dir, "*.parquet"))
         
         if not parquet_files:
-            print(f"⚠️ 未找到 {taxi_type} 车原始数据文件（路径：{raw_dir}）")
+            print(f"⚠️ 未找到 {taxi_type} 车原始数据文件")
             continue
         
-        # 批量处理每个文件
         for file_path in parquet_files:
             try:
-                # 清洗数据（获取原始条数+清洗后条数）
                 clean_df, raw_count, clean_count = clean_single_taxi_file(file_path, taxi_type)
-                
-                # 生成保存文件名
                 file_name = os.path.basename(file_path)
-                save_file_name = f"{taxi_type}_cleaned_{file_name}"
-                save_path = os.path.join(CONFIG["clean_data_dir"], save_file_name)
-                
-                # 保存清洗后的数据（Parquet格式，节省空间）
+                save_path = os.path.join(CONFIG["clean_data_dir"], f"{taxi_type}_cleaned_{file_name}")
                 clean_df.to_parquet(save_path, index=False)
-                
-                # 输出增强日志：包含原始条数+清洗后条数
-                print(f"✅ 已保存清洗后的数据：{save_path}")
-                print(f"   📊 原始数据：{raw_count} 条 | 清洗后：{clean_count} 条 | 过滤掉：{raw_count - clean_count} 条\n")
-                
+                print(f"✅ 已保存：{save_path}")
             except Exception as e:
-                print(f"❌ 处理文件 {file_path} 失败：{str(e)}\n")
+                print(f"❌ 处理失败：{e}")
 
-# ===================== 加载清洗后的数据（不合并所有文件） =====================
+# ===================== 轻量加载数据：抽样+不爆内存 =====================
 def load_cleaned_data():
-    # 1. 加载区域表
     zone_df = pd.read_csv(CONFIG["zone_file_path"])
     zone_df = zone_df.rename(columns={
         "LocationID": "位置ID",
@@ -185,21 +155,26 @@ def load_cleaned_data():
         "service_zone": "服务区域"
     })
     
-    # 2. 查找清洗后文件
     clean_files = glob.glob(os.path.join(CONFIG["clean_data_dir"], "*.parquet"))
     if not clean_files:
-        print("⚠️ 未找到清洗后的数据，先执行批量清洗...")
         batch_clean_taxi_data()
         clean_files = glob.glob(os.path.join(CONFIG["clean_data_dir"], "*.parquet"))
-    
-    # 3. 只加载第一个文件，不合并！
-    df = pd.read_parquet(clean_files[0])
-    
-    # 4. 关联区域信息
+
+    # 🔥 分别加载绿车/黄车，抽样
+    df_list = []
+    for file in clean_files:
+        # 每个文件只抽少量数据，极速加载
+        temp_df = pd.read_parquet(file).sample(min(5000, len(pd.read_parquet(file))), random_state=1)
+        df_list.append(temp_df)
+
+    # 合并抽样后的数据
+    df = pd.concat(df_list, ignore_index=True)
+    # 最终再抽一次总样本
+    df = df.sample(min(CONFIG["sample_size"], len(df)), random_state=1)
+
+    # 关联区域
     df = df.merge(zone_df, left_on="上车区域ID", right_on="位置ID", how="left")
     df = df[df["行政区"].notna()]
-    
-    # 5. 提取小时
     df["小时"] = df["上车时间"].dt.hour
     
     return df
@@ -219,12 +194,10 @@ def get_taxi_data():
 def trigger_clean_data():
     try:
         batch_clean_taxi_data()
-        return {"status": "success", "message": "数据清洗完成，已保存到 data/clean_data 目录"}
+        return {"status": "success", "message": "数据清洗完成"}
     except Exception as e:
         return {"status": "failed", "message": f"清洗失败：{str(e)}"}
 
-# 本地运行
 if __name__ == "__main__":
     import uvicorn
-    batch_clean_taxi_data()
     uvicorn.run(app, host="0.0.0.0", port=8000)
