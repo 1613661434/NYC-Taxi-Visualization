@@ -252,11 +252,15 @@ const loadDashboardData = async () => {
   fixMonthOrder()
   
   try {
-    // 携带月份参数请求后端
+    // ✅ 关键修改：携带所有筛选参数请求后端
     const res = await axios.get('http://127.0.0.1:8000/api/dashboard-data', {
       params: {
         start_month: startMonth.value,
-        end_month: endMonth.value
+        end_month: endMonth.value,
+        company: filters.company,       // 车型
+        borough: filters.borough,       // 行政区
+        min_fare: filters.minFare,      // 最低费用
+        max_fare: filters.maxFare       // 最高费用
       }
     })
     fullDashboardData = res.data
