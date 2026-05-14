@@ -63,7 +63,7 @@ npm install
 
 1. 确保项目根目录存在 `.vscode/tasks.json` 配置文件
 
-2. 打开 VSCode，在上方搜索窗口输入`task`：
+2. 打开 VSCode，在上方搜索窗口输入`task `：
 
 3. 在弹出的任务列表中选择对应功能：
 
