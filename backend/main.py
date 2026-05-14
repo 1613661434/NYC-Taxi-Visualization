@@ -4,7 +4,6 @@ import pandas as pd
 import warnings
 import os
 import glob
-
 warnings.filterwarnings('ignore')
 
 app = FastAPI(title="NYC Taxi API")
@@ -17,6 +16,7 @@ app.add_middleware(
 )
 
 CONFIG = {
+    "raw_data_dir": "../data",
     "clean_data_dir": "../data/clean_data",
     "zone_file_path": "../data/taxi_zone_lookup.csv",
     "sample_size": 50000,
@@ -101,7 +101,18 @@ def get_dashboard(
         },
         "correlation": df[["行程距离", "车费", "小费", "乘客数量", "修正后总费用"]].corr().round(2).to_dict()
     }
+    return result
 
+@app.get("/api/clean-data")
+def trigger_clean_data():
+    try:
+        batch_clean_taxi_data()
+        return {"status": "success", "message": "数据清洗完成，已保存到 data/clean_data 目录"}
+    except Exception as e:
+        return {"status": "failed", "message": f"清洗失败：{str(e)}"}
+
+# 本地运行
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    batch_clean_taxi_data()
+    uvicorn.run(app, host="0.0.0.0", port=8000)
