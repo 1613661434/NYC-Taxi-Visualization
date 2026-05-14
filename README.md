@@ -1,4 +1,4 @@
-# NYC\-Taxi\-Visualization
+# NYC-Taxi-Visualization
 
 NYC 出租车数据可视化分析项目，基于 **Python FastAPI 后端 + Vue3 前端** 实现前后端分离，包含**完整版数据清洗**+**交互式可视化图表**，小白可一键部署运行。
 
