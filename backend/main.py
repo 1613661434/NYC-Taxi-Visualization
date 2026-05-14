@@ -36,17 +36,34 @@ def load_cleaned_data():
     zone_df = pd.read_csv(CONFIG["zone_file_path"]).rename(columns={"LocationID": "位置ID", "Borough": "行政区"})
     files = glob.glob(os.path.join(CONFIG["clean_data_dir"], "*.parquet"))
     
-    df_list = [pd.read_parquet(f).sample(min(5000, len(f)), random_state=1) for f in files]
+    df_list = []
+    # 遍历每个文件，从文件名提取车型
+    for f in files:
+        # 先读取文件
+        df_single = pd.read_parquet(f)
+        # 再抽样
+        df_single = df_single.sample(min(5000, len(df_single)), random_state=1)
+        # 从文件名判断车型：包含green→绿色出租车，包含yellow→黄色出租车
+        if "green" in f.lower():
+            df_single["车型"] = "绿色出租车"
+        elif "yellow" in f.lower():
+            df_single["车型"] = "黄色出租车"
+        else:
+            df_single["车型"] = "未知"  # 兜底
+        df_list.append(df_single)
+    
+    # 合并所有文件数据
     df = pd.concat(df_list, ignore_index=True)
     df = df.sample(min(CONFIG["sample_size"], len(df)), random_state=1)
     
+    # 关联行政区数据
     df = df.merge(zone_df, left_on="上车区域ID", right_on="位置ID", how="left").dropna(subset=["行政区"])
     df["小时"] = df["上车时间"].dt.hour
-    df["月份"] = df["上车时间"].dt.month  # 新增月份字段
+    df["月份"] = df["上车时间"].dt.month
     df_cache = df
     return df
 
-# ===================== 大屏接口（支持月份筛选） =====================
+# ===================== 大屏接口 =====================
 @app.get("/api/dashboard-data")
 def get_dashboard(
     start_month: int = Query(1, ge=1, le=12),
@@ -55,7 +72,6 @@ def get_dashboard(
     df = load_cleaned_data()
     df = df[(df["月份"] >= start_month) & (df["月份"] <= end_month)]
     
-    # 原有大屏数据计算逻辑（完整保留）
     return {
         "kpi": {
             "总行程数": len(df),
@@ -74,12 +90,9 @@ def get_dashboard(
         "period_dist": pd.cut(df["小时"], [0,6,10,16,20,24], labels=["深夜","早高峰","白天","晚高峰","夜间"]).value_counts().to_dict(),
         "passenger_dist": df["乘客数量"].value_counts().sort_index().to_dict(),
         "yellow_green_comparison": {
-            "平均费用": df.groupby("车型")["修正后总费用"].mean().round(1)
-                .rename(index={"Yellow": "黄色出租车", "Green": "绿色出租车"}).to_dict(),
-            "平均距离": df.groupby("车型")["行程距离"].mean().round(1)
-                .rename(index={"Yellow": "黄色出租车", "Green": "绿色出租车"}).to_dict(),
-            "平均小费": df.groupby("车型")["小费"].mean().round(1)
-                .rename(index={"Yellow": "黄色出租车", "Green": "绿色出租车"}).to_dict()
+            "平均费用": df.groupby("车型")["修正后总费用"].mean().round(1).to_dict(),
+            "平均距离": df.groupby("车型")["行程距离"].mean().round(1).to_dict(),
+            "平均小费": df.groupby("车型")["小费"].mean().round(1).to_dict()
         },
         "correlation": df[["行程距离", "车费", "小费", "乘客数量", "修正后总费用"]].corr().round(2).to_dict()
     }
