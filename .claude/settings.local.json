@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c ' *)",
+      "Bash(python -m uvicorn main:app --host 127.0.0.1 --port 8000)",
+      "Bash(curl -s \"http://127.0.0.1:8000/api/dashboard-data?start_month=1&end_month=3\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('KPI trips:', d['kpi']['总行程数']\\); print\\('Company:', d['company_compare']\\); print\\('Borough count:', len\\(d['borough_dist']\\)\\)\")",
+      "Bash(pkill -f \"uvicorn main:app\")",
+      "Bash(curl -s \"http://127.0.0.1:8000/api/dashboard-data\")",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\('OK: trips=', d['kpi']['总行程数'], 'charts keys:', list\\(d.keys\\(\\)\\)[:5]\\)\")"
+    ]
+  }
+}

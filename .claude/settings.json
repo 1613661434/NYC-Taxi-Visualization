@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm list *)",
+      "Bash(npm install *)",
+      "Bash(cp /tmp/vue-big-screen/src/assets/pageBg.png \"e:/Desktop/datashow/NYC-Taxi-Visualization/frontend/src/assets/pageBg.png\")",
+      "Bash(cp /tmp/vue-big-screen/src/assets/title-bg.png \"e:/Desktop/datashow/NYC-Taxi-Visualization/frontend/src/assets/title-bg.png\")",
+      "Bash(curl -s \"http://127.0.0.1:5173\")",
+      "Bash(taskkill //F //IM python.exe)",
+      "Bash(curl -s -o /dev/null -w \"frontend: %{http_code}\\\\n\" \"http://127.0.0.1:5173\")",
+      "Bash(curl -s -o /dev/null -w \"backend: %{http_code}\\\\n\" \"http://127.0.0.1:8000/api/dashboard-data\")",
+      "Bash(python -c \"import geopandas; print\\('geopandas available'\\)\")",
+      "Bash(pip install *)"
+    ]
+  }
+}

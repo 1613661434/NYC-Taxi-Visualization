@@ -1,0 +1,186 @@
+======================================================================
+  NYC Taxi Visualization 项目说明
+  基于 FastAPI + Vue3 + ECharts 的纽约出租车数据可视化驾驶舱
+======================================================================
+
+## 一、项目概述
+
+本项目对 2018 年 NYC TLC（出租车与豪华轿车委员会）公开的黄色/绿色出租车行程
+数据进行清洗、分析和可视化。采用前后端分离架构，后端提供数据分析 API，
+前端呈现 DataV 风格大屏驾驶舱。
+
+## 二、技术栈
+
+  - 后端：Python 3.12 / FastAPI / Pandas / scikit-learn / scipy
+  - 前端：Vue 3.3 / Vite 4 / ECharts 6 / Axios / Sass
+  - 数据：Parquet 格式（绿色12个月 + 黄色12个月，共约2GB）
+
+## 三、数据清洗（backend/clean_data.py）
+
+  1. 字段中文化 —— 绿色出租车10个字段、黄色出租车12个字段统一汉化
+  2. 去重 + 时间标准化 + 过滤非2018年记录
+  3. 费用修正 —— 按官方规则重新计算总费用 = 车费+附加费+MTA税+改善费+小费+通行费
+  4. 异常值过滤 —— 乘客1-6人、距离>0、费用>=0、下车晚于上车
+  5. 关联区域映射表（taxi_zone_lookup.csv），补齐行政区和区域信息
+  6. 提取时间特征 —— 小时、月份
+  7. 批量输出24个清洗后 parquet 文件到 data/clean_data/
+
+## 四、后端 API（backend/main.py，共12个端点）
+
+  1. GET /api/dashboard-data        — 总览仪表盘数据（KPI + 10类图表数据）
+  2. GET /api/missing-values        — 各字段缺失值统计（Req 1）
+  3. GET /api/clustering            — K-means 聚类 + PCA降维 + 肘部法则（Req 2+3）
+  4. GET /api/prediction/train      — 线性回归模型训练 + 评估指标（Req 4）
+  5. GET /api/prediction/compare    — 预测值 vs 实际值 + 残差分布（Req 4）
+  6. GET /api/preference            — 多维度偏好分析（Req 5）
+  7. GET /api/correlation-advanced  — Pearson/Spearman 相关系数 + p值 + 散点数据（Req 6）
+  8. GET /api/map-data              — 区域地图聚合数据（上车/下车 + 263个zone）（Req 7）
+  9. GET /api/timeline-data         — 时间序列数据（月/周/小时粒度）（Req 8）
+  10. GET /api/drill-down           — 维度下钻详情（Req 9）
+  11. GET /api/cross-correlation    — 跨维度关联发现（Req 10）
+
+  新增后端模块：
+  - backend/config.py              — 集中配置（采样量、路径、缓存策略）
+  - backend/data_loader.py         — 数据加载/缓存（内存+磁盘双重缓存）
+  - backend/analysis/missing_values.py   — 缺失值分析
+  - backend/analysis/clustering.py       — K-means聚类 + PCA + 轮廓系数
+  - backend/analysis/prediction.py       — 线性回归预测
+  - backend/analysis/preference.py       — 5维度偏好分析
+  - backend/analysis/correlation.py      — Pearson/Spearman + p值
+  - backend/analysis/cross_data.py       — 6项跨维度有趣发现
+
+## 五、前端架构（frontend/src/）
+
+  采用组件化架构，1个 Shell + 13个布局/通用组件 + 11个图表组件 + 8个面板：
+
+  ### 5.1 布局层
+  - App.vue                  — Shell：DataV风格标题栏 + 平行四边形副标题 + 8Tab导航
+  - DashboardHeader.vue      — 标题 + 实时日期时间
+  - KpiCards.vue             — 6个KPI指标卡片（四角装饰边框）
+  - FilterToolbar.vue        — 筛选栏（月份区间/车型/行政区联动）
+  - DashboardFooter.vue      — 底部说明
+
+  ### 5.2 通用组件
+  - ChartCard.vue            — 图表卡片容器（DataV 12号边框四角装饰）
+  - DataTable.vue            — 可排序数据表格
+  - DrillDownModal.vue       — 点击下钻详情弹窗
+  - TimelinePlayer.vue       — 时间轴播放器（播放/暂停/调速）
+
+  ### 5.3 图表组件（Overview面板，共11个）
+  - HourlyTrendChart.vue     — 24小时订单趋势折线图
+  - CompanyPieChart.vue      — 黄车 vs 绿车订单占比环形图
+  - RadarChart.vue           — 多维性能雷达图
+  - BoroughBarChart.vue      — 行政区热度 TOP5 横向柱状图
+  - FareLevelChart.vue       — 费用等级分布柱状图
+  - PaymentChart.vue         — 支付方式环形图
+  - WeeklyTrendChart.vue     — 一周出行规律折线图
+  - PeriodPieChart.vue       — 出行时段分布饼图
+  - PassengerChart.vue       — 乘客数量分布柱状图
+  - ComparisonBarChart.vue   — 黄绿车核心指标分组柱状图
+  - CorrelationHeatmap.vue   — 数值字段相关性热力图
+
+  ### 5.4 分析面板（8个Tab页）
+  - OverviewPanel            — 总览：11图表 + KPI
+  - MissingValuesPanel       — 数据质量：缺失值柱状图 + 按车型对比
+  - AnalysisPanel            — 聚类分析：肘部法则折线 + PCA散点 + 聚类画像雷达
+  - PredictionPanel          — 预测建模：预测散点 + 残差直方图 + 特征重要性
+  - PreferencePanel          — 偏好分析：6子图（支付/时段/距离/高峰/乘客）
+  - AdvancedCorrelationPanel — 相关性：增强热力图 + p值 + Top排名 + 点击散点
+  - MapPanel                 — 地图视图：NYC 263区地理热力图 + TOP5排行
+  - CrossCorrelationPanel    — 交叉发现：6张数据驱动发现卡片
+
+  ### 5.5 工具层
+  - api/index.js             — 统一 Axios API 层，封装所有后端接口调用
+  - composables/useFilters.js — 全局筛选状态管理（provide/inject）
+  - composables/useCharts.js  — ECharts 实例生命周期管理
+  - utils/formatters.js       — 数字/百分比/美元格式化
+  - utils/echarts-defaults.js — 深色主题 ECharts 默认配置
+  - assets/datav-theme.css    — DataV 风格 CSS（装饰边框、平行四边形标题等）
+
+## 六、可视化设计特点
+
+  1. DataV 风格深色主题 —— 黑色背景 + 蓝色调 (#568aea) + 四角装饰边框
+  2. 平行四边形标题 —— CSS skewX 变形实现
+  3. 所有图表标注具体数值 —— label.show: true
+  4. 响应式布局 —— flex/grid + @media 适配不同屏幕
+  5. 8个Tab页签 —— 避免单页过长，按分析维度分组
+
+## 七、10项需求实现对照
+
+  Req 1  缺失值处理    → /api/missing-values + MissingValuesPanel
+  Req 2  聚类建模      → /api/clustering（K-means+PCA+肘部法则）
+  Req 3  多图表分析    → AnalysisPanel（散点+雷达+肘部折线）
+  Req 4  预测建模      → /api/prediction/*（线性回归+残差分析）
+  Req 5  偏好分析      → /api/preference（5维度偏好）
+  Req 6  相关性分析    → /api/correlation-advanced（Pearson+Spearman+p值）
+  Req 7  地图集成      → /api/map-data（NYC 263区GeoJSON热力图）
+  Req 8  动态可视化    → TimelinePlayer 时间轴播放器
+  Req 9  人机交互      → 点击下钻弹窗 + 排序表格 + 键盘Esc关闭
+  Req 10 跨数据关联    → /api/cross-correlation（6项自动发现）
+
+## 八、性能优化
+
+  1. 采样策略 —— 仪表盘15000行/分析20000行（原5万/10万）
+  2. 磁盘缓存 —— 首次加载后写入 _cached_*.parquet，二次启动秒开
+  3. 内存缓存 —— 同一进程内请求直接命中缓存
+  4. 相关性优化 —— pandas内置corr()替代逐对scipy调用，56秒→0.07秒
+  5. 按需加载 —— Tab切换时才挂载对应面板组件（v-if）
+
+## 九、数据文件说明
+
+  data/green/            — 绿色出租车原始数据（12个parquet，英文列名）
+  data/yellow/           — 黄色出租车原始数据（12个parquet，英文列名）
+  data/clean_data/       — 清洗后数据（24个parquet，中文列名）
+  data/taxi_zone_lookup.csv — 区域映射表（LocationID→行政区→Zone名）
+  data/taxi_zones/       — NYC出租车区域Shapefile（GIS地理边界，263个zone）
+  frontend/public/nyc-taxi-zones.json — 由Shapefile转换的GeoJSON（4MB）
+
+## 十、启动方式
+
+  终端1（后端）：
+    cd backend
+    pip install fastapi uvicorn pandas pyarrow scikit-learn scipy
+    python clean_data.py          # 仅首次
+    uvicorn main:app --reload     # http://127.0.0.1:8000
+
+  终端2（前端）：
+    cd frontend
+    npm install
+    npm run dev                   # http://127.0.0.1:5173
+
+## 十一、目录结构
+
+  NYC-Taxi-Visualization/
+  ├── backend/
+  │   ├── main.py                  # FastAPI 路由（12端点）
+  │   ├── config.py                # 集中配置
+  │   ├── data_loader.py           # 数据加载/双缓存
+  │   ├── clean_data.py            # 数据清洗脚本
+  │   ├── analysis/
+  │   │   ├── missing_values.py    # Req 1
+  │   │   ├── clustering.py        # Req 2+3
+  │   │   ├── prediction.py        # Req 4
+  │   │   ├── preference.py        # Req 5
+  │   │   ├── correlation.py       # Req 6
+  │   │   └── cross_data.py        # Req 10
+  │   └── utils/
+  ├── frontend/
+  │   └── src/
+  │       ├── App.vue              # Shell + Tab导航
+  │       ├── main.js              # Vue入口
+  │       ├── style.css            # 全局样式
+  │       ├── api/index.js         # API封装
+  │       ├── composables/         # useFilters, useCharts
+  │       ├── utils/               # formatters, echarts-defaults
+  │       ├── assets/              # datav-theme.css
+  │       └── components/
+  │           ├── layout/          # Header, KpiCards, FilterToolbar, Footer
+  │           ├── common/          # ChartCard, DataTable, DrillDownModal, TimelinePlayer
+  │           ├── charts/          # 11个图表组件
+  │           └── panels/          # 8个面板组件
+  └── data/
+      ├── green/                   # 原始绿色出租车数据
+      ├── yellow/                  # 原始黄色出租车数据
+      ├── clean_data/              # 清洗后数据
+      ├── taxi_zones/              # GIS Shapefile
+      └── taxi_zone_lookup.csv     # 区域映射表

@@ -29,7 +29,8 @@ COLUMN_MAPPING = {
         "tip_amount": "小费",
         "tolls_amount": "通行费",
         "total_amount": "原始总费用",
-        "trip_type": "行程类型"
+        "trip_type": "行程类型",
+        "payment_type": "支付方式"
     },
     "yellow": {
         "tpep_pickup_datetime": "上车时间",
@@ -46,7 +47,8 @@ COLUMN_MAPPING = {
         "tolls_amount": "通行费",
         "total_amount": "原始总费用",
         "RatecodeID": "费率类型ID",
-        "congestion_surcharge": "拥堵费"
+        "congestion_surcharge": "拥堵费",
+        "payment_type": "支付方式"
     }
 }
 
