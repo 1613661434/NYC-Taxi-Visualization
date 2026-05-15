@@ -43,6 +43,11 @@ const load = async () => {
   ready.value = true; await nextTick(); renderAll()
 }
 
+const addUnit = (f) => {
+  const m = { '行程距离':'行程距离(mi)', '车费':'车费($)', '小费':'小费($)', '乘客数量':'乘客数量(人)', '修正后总费用':'总费用($)', '小时':'时段(时)' }
+  return m[f] || f
+}
+
 const renderAll = () => {
   const d = data.value; if (!d) return
   if (c1.value) {
@@ -57,7 +62,7 @@ const renderAll = () => {
     const clusters = [...new Set(d.scatter_data.map(p=>p.cluster))]
     const colors = ['#2f7b9e','#c23531','#4a7c59','#b84c5c','#9b59b6','#c23531']
     charts.c2.setOption({
-      tooltip:{trigger:'item',formatter:p=>'聚类'+(p.data[2]+1)}, xAxis:{type:'value',name:'PC1'}, yAxis:{type:'value',name:'PC2'},
+      tooltip:{trigger:'item',formatter:p=>'聚类'+(p.data[2]+1)}, xAxis:{type:'value',name:'主成分1 (PC1)'}, yAxis:{type:'value',name:'主成分2 (PC2)'},
       series: clusters.map(c=>({name:'聚类'+(c+1),type:'scatter',data:d.scatter_data.filter(p=>p.cluster===c).map(p=>[p.x,p.y,p.cluster]),symbolSize:5,itemStyle:{color:colors[c%colors.length]}})),
       legend:{data:clusters.map(c=>'聚类'+(c+1)),textStyle:{color:'#5c3d2e'},top:5},
     })
@@ -67,7 +72,7 @@ const renderAll = () => {
     const feats = d.features_used||[], maxs={}
     feats.forEach(f=>{maxs[f]=Math.max(...d.cluster_profiles.map(p=>p[f]||0))*1.3||10})
     charts.c3.setOption({
-      radar:{indicator:feats.map(f=>({name:f,max:maxs[f]})),shape:'polygon',center:['50%','55%'],radius:'65%'},
+      radar:{indicator:feats.map(f=>({name:addUnit(f),max:maxs[f]})),shape:'polygon',center:['50%','55%'],radius:'65%'},
       series:[{type:'radar',data:d.cluster_profiles.map((p,i)=>({name:'聚类'+(i+1),value:feats.map(f=>p[f]||0)}))}],
       legend:{data:d.cluster_profiles.map((_,i)=>'聚类'+(i+1)),textStyle:{color:'#5c3d2e'},top:5},
     })

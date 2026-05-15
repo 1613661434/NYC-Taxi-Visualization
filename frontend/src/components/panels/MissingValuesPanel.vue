@@ -103,5 +103,5 @@ onUnmounted(() => { c1?.dispose(); c2?.dispose() })
 .info-text strong { color: #8b4513; }
 .chart-row { display: flex; gap: 20px; margin-bottom: 24px; flex-wrap: wrap; }
 .chart-row > * { flex: 1; min-width: 280px; }
-.chart { width: 100%; height: 300px; }
+.chart { width: 100%; height: 260px; }
 </style>

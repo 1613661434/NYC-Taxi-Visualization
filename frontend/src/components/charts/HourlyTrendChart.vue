@@ -27,7 +27,7 @@ const doRender = () => {
     animationEasing: 'cubicOut',
     tooltip: { trigger: 'axis', axisPointer: { type: 'cross', crossStyle: { color: '#64748B' } } },
     grid: { top: 40, right: 30, bottom: 30, left: 50 },
-    xAxis: { type: 'category', data: hourly.map(d => d[0] + ':00'), axisLabel: { fontSize: 10 },
+    xAxis: { type: 'category', data: hourly.map(d => d[0] + ':00'), name: '小时', axisLabel: { fontSize: 10 },
       axisLine: { lineStyle: { color: '#6b3a2a' } } },
     yAxis: { type: 'value', name: '订单量(单)', nameTextStyle: { fontSize: 11 },
       splitLine: { lineStyle: { color: '#1E293B', type: 'dashed' } } },
@@ -54,4 +54,4 @@ onMounted(() => { render() })
 onUnmounted(() => chart?.dispose())
 </script>
 
-<style scoped>.chart { width: 100%; height: 300px; }</style>
+<style scoped>.chart { width: 100%; height: 260px; }</style>

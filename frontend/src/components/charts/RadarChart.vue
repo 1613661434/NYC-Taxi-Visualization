@@ -55,4 +55,4 @@ onMounted(() => { render() })
 onUnmounted(() => chart?.dispose())
 </script>
 
-<style scoped>.chart { width: 100%; height: 300px; }</style>
+<style scoped>.chart { width: 100%; width: 80%; height: 380px; margin: 0 auto; }</style>

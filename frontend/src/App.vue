@@ -108,9 +108,6 @@
           <dv-border-box-12 v-else-if="currentTab === 'map'">
             <MapPanel :filters="filters" :startMonth="startMonth" :endMonth="endMonth" />
           </dv-border-box-12>
-          <dv-border-box-12 v-else-if="currentTab === 'cross'">
-            <CrossCorrelationPanel :filters="filters" :startMonth="startMonth" :endMonth="endMonth" />
-          </dv-border-box-12>
         </div>
 
         <!-- 底部装饰 -->
@@ -140,7 +137,6 @@ import PredictionPanel from './components/panels/PredictionPanel.vue'
 import PreferencePanel from './components/panels/PreferencePanel.vue'
 import AdvancedCorrelationPanel from './components/panels/AdvancedCorrelationPanel.vue'
 import MapPanel from './components/panels/MapPanel.vue'
-import CrossCorrelationPanel from './components/panels/CrossCorrelationPanel.vue'
 
 const loading = ref(true)
 const currentTab = ref('overview')
@@ -155,16 +151,15 @@ const drillTitle = ref('')
 const drillData = ref({})
 
 const tabs = [
-  { id: 'overview', label: '总览', icon: '📊' },
+  { id: 'overview', label: '图表分析', icon: '📊' },
   { id: 'cluster', label: '聚类分析', icon: '🎯' },
   { id: 'prediction', label: '预测建模', icon: '🔮' },
   { id: 'preference', label: '偏好分析', icon: '📋' },
   { id: 'correlation', label: '相关性', icon: '🔗' },
   { id: 'map', label: '地图视图', icon: '🗺️' },
-  { id: 'cross', label: '交叉发现', icon: '💡' },
 ]
 
-const currentTabLabel = computed(() => tabs.find(t => t.id === currentTab.value)?.label || '总览')
+const currentTabLabel = computed(() => tabs.find(t => t.id === currentTab.value)?.label || '图表分析')
 
 const fixMonthOrder = () => {
   if (startMonth.value > endMonth.value)

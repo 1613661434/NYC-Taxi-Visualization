@@ -27,8 +27,8 @@ const doRender = () => {
     animationDuration: 800, animationEasing: 'cubicOut',
     tooltip: { trigger: 'axis' },
     grid: { top: 30, right: 20, bottom: 30, left: 50 },
-    xAxis: { type: 'category', data: passengers.map(p => p[0]+'人'), axisLabel: { fontSize: 11 } },
-    yAxis: { type: 'value', splitLine: { lineStyle: { color: '#1E293B', type: 'dashed' } } },
+    xAxis: { type: 'category', data: passengers.map(p => p[0]+'人'), name: '乘客数量', axisLabel: { fontSize: 11 } },
+    yAxis: { type: 'value', name: '订单量(单)', splitLine: { lineStyle: { color: '#1E293B', type: 'dashed' } } },
     series: [{
       data: values.map((v,i) => ({ value: v, itemStyle: { color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#c23531'},{offset:1,color:'#ca6924'}]) } })),
       type: 'bar', barWidth: '60%',
@@ -43,4 +43,4 @@ onMounted(() => { render() })
 onUnmounted(() => chart?.dispose())
 </script>
 
-<style scoped>.chart { width: 100%; height: 300px; }</style>
+<style scoped>.chart { width: 100%; height: 260px; }</style>

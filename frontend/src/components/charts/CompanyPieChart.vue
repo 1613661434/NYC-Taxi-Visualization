@@ -52,7 +52,7 @@ onUnmounted(() => chart?.dispose())
 </script>
 
 <style scoped>
-.chart { width: 100%; height: 280px; }
+.chart { width: 100%; height: 260px; }
 .stats-row { display: flex; justify-content: center; gap: 16px; margin-top: 8px; }
 .stat-badge { padding: 4px 16px; border-radius: 16px; font-size: 12px; font-weight: 600; }
 .stat-badge.yellow { background: rgba(237,125,49,0.15); color: #c23531; }

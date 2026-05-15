@@ -27,8 +27,8 @@ const doRender = () => {
     animationDuration: 1400, animationEasing: 'cubicOut',
     tooltip: { trigger: 'axis' },
     grid: { top: 40, right: 20, bottom: 30, left: 50 },
-    xAxis: { type: 'category', data: weekNames, axisLabel: { fontSize: 11, fontWeight: 'bold' }, axisLine: { lineStyle: { color: '#6b3a2a' } } },
-    yAxis: { type: 'value', splitLine: { lineStyle: { color: '#1E293B', type: 'dashed' } } },
+    xAxis: { type: 'category', data: weekNames, name: '星期', axisLabel: { fontSize: 11, fontWeight: 'bold' }, axisLine: { lineStyle: { color: '#6b3a2a' } } },
+    yAxis: { type: 'value', name: '订单量(单)', splitLine: { lineStyle: { color: '#1E293B', type: 'dashed' } } },
     series: [{
       data: values, type: 'line', smooth: true,
       symbol: 'roundRect', symbolSize: 10,
@@ -45,4 +45,4 @@ onMounted(() => { render() })
 onUnmounted(() => chart?.dispose())
 </script>
 
-<style scoped>.chart { width: 100%; height: 300px; }</style>
+<style scoped>.chart { width: 100%; height: 260px; }</style>

@@ -25,8 +25,8 @@ const doRender = () => {
     animationDuration: 800, animationEasing: 'cubicOut',
     tooltip: { trigger: 'axis' },
     grid: { top: 30, right: 20, bottom: 30, left: 50 },
-    xAxis: { type: 'category', data: fare.map(d=>d[0]), axisLabel: { fontSize: 10, rotate: 15 } },
-    yAxis: { type: 'value', splitLine: { lineStyle: { color: '#1E293B', type: 'dashed' } } },
+    xAxis: { type: 'category', data: fare.map(d=>d[0]), name: '费用区间($)', axisLabel: { fontSize: 10, rotate: 15 } },
+    yAxis: { type: 'value', name: '订单量(单)', splitLine: { lineStyle: { color: '#1E293B', type: 'dashed' } } },
     series: [{
       data: fare.map(d=>d[1]), type: 'bar', barWidth: '60%',
       itemStyle: { borderRadius: [6,6,0,0], color: new echarts.graphic.LinearGradient(0,0,0,1,[{offset:0,color:'#4a7c59'},{offset:1,color:'#61a0a8'}]) },
@@ -40,4 +40,4 @@ onMounted(() => { render() })
 onUnmounted(() => chart?.dispose())
 </script>
 
-<style scoped>.chart { width: 100%; height: 300px; }</style>
+<style scoped>.chart { width: 100%; height: 260px; }</style>
