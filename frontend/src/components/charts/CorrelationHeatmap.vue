@@ -22,9 +22,11 @@ const render = () => {
 const doRender = () => {
   const corrData = props.advanced ? props.data.pearson : props.data.correlation
   if (!corrData) return
-  const fields = Object.keys(corrData)
+  const rename = (s) => s === '修正后总费用' ? '总费用' : s
+  const rawFields = Object.keys(corrData)
+  const fields = rawFields.map(rename)
   const values = []
-  for (let i=0;i<fields.length;i++) for(let j=0;j<fields.length;j++) values.push([j,i,corrData[fields[i]]?.[fields[j]]||0])
+  for (let i=0;i<fields.length;i++) for(let j=0;j<fields.length;j++) values.push([j,i,corrData[rawFields[i]]?.[rawFields[j]]||0])
   chart.setOption({
     animationDuration: 800,
     tooltip: { position: 'top', formatter: p => `${fields[p.data[0]]} × ${fields[p.data[1]]}<br/>r = <b>${p.data[2].toFixed(3)}</b>` },
