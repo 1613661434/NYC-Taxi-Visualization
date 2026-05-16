@@ -22,6 +22,10 @@ export function fetchPredictionCompare(params) {
   return api.get('/api/prediction/compare', { params }).then(r => r.data)
 }
 
+export function fetchMonthlyPrediction(params) {
+  return api.get('/api/prediction/monthly', { params }).then(r => r.data)
+}
+
 export function fetchPreference(params) {
   return api.get('/api/preference', { params }).then(r => r.data)
 }
@@ -44,4 +48,8 @@ export function fetchDrillDown(params) {
 
 export function fetchCrossCorrelation(params) {
   return api.get('/api/cross-correlation', { params }).then(r => r.data)
+}
+
+export function fetchBoroughAnalysis(params) {
+  return api.get('/api/borough-analysis', { params }).then(r => r.data)
 }

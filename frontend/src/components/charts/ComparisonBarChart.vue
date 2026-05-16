@@ -29,10 +29,10 @@ const doRender = () => {
     tooltip: { trigger: 'axis' },
     legend: { data:['黄色出租车','绿色出租车'], top:0, right:0 },
     grid: { top:40, right:20, bottom:30, left:50 },
-    xAxis: { type:'category', data:['平均费用($)','平均距离(mi)','平均小费($)'] },
-    yAxis: { type:'value' },
+    xAxis: { type:'category', data:['平均费用($)','平均距离(mi)','平均小费($)'], name:'指标', nameLocation:'center', nameGap:30, nameTextStyle:{fontSize:13, color:'#5c3d2e', fontWeight:'bold'} },
+    yAxis: { type:'value', name:'数值', nameLocation:'center', nameGap:40, nameTextStyle:{fontSize:13, color:'#5c3d2e', fontWeight:'bold'} },
     series: [
-      { name: '黄色出租车', type: 'bar', barWidth: '35%', data: [yf,yd,yt], itemStyle: { borderRadius: [6,6,0,0], color: '#c23531' }, label: { show: true, position: 'top', formatter: p=>p.value.toFixed(1) }, emphasis: { itemStyle: { shadowBlur: 8, shadowColor: 'rgba(237,125,49,0.4)' } } },
+      { name: '黄色出租车', type: 'bar', barWidth: '35%', data: [yf,yd,yt], itemStyle: { borderRadius: [6,6,0,0], color: '#e6b422' }, label: { show: true, position: 'top', formatter: p=>p.value.toFixed(1) }, emphasis: { itemStyle: { shadowBlur: 8, shadowColor: 'rgba(230,180,34,0.4)' } } },
       { name: '绿色出租车', type: 'bar', barWidth: '35%', data: [gf,gd,gt], itemStyle: { borderRadius: [6,6,0,0], color: '#4a7c59' }, label: { show: true, position: 'top', formatter: p=>p.value.toFixed(1) }, emphasis: { itemStyle: { shadowBlur: 8, shadowColor: 'rgba(112,173,71,0.4)' } } },
     ],
   })

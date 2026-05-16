@@ -18,8 +18,8 @@ def load_zone_lookup():
     return zone_df
 
 
-def _build_df(samples_per_file, sample_size):
-    """实际从原始文件加载并采样"""
+def _build_df(sample_size):
+    """从每个原始文件随机抽取10%，合并后按上限采样"""
     zone_df = load_zone_lookup()
     files = [f for f in glob.glob(os.path.join(CONFIG["clean_data_dir"], "*.parquet"))
              if not os.path.basename(f).startswith("_")]
@@ -27,8 +27,8 @@ def _build_df(samples_per_file, sample_size):
     df_list = []
     for f in files:
         df_single = pd.read_parquet(f)
-        n = min(samples_per_file, len(df_single))
-        df_single = df_single.sample(n, random_state=1)
+        # 从每个文件随机抽取10%
+        df_single = df_single.sample(frac=CONFIG["sample_ratio"], random_state=1)
         if "green" in f.lower():
             df_single["车型"] = "绿色出租车"
         elif "yellow" in f.lower():
@@ -73,7 +73,7 @@ def load_cleaned_data(sample_size=None):
             pass
 
     target = sample_size if sample_size else CONFIG["sample_size"]
-    df = _build_df(CONFIG["samples_per_file"], target)
+    df = _build_df(target)
 
     # 写入磁盘缓存
     if sample_size is None and disk_path:
@@ -106,7 +106,7 @@ def load_full_data(sample_size=None):
             pass
 
     target = sample_size if sample_size else CONFIG["analysis_sample_size"]
-    df = _build_df(CONFIG["analysis_per_file"], target)
+    df = _build_df(target)
 
     # 写入磁盘缓存
     if sample_size is None and disk_path:

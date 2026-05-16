@@ -37,7 +37,7 @@
           <span v-else>◀</span>
         </div>
         <div v-show="!sidebarCollapsed" class="sidebar-content">
-          <div class="filter-section">
+          <div class="filter-section" v-if="currentTab !== 'prediction'">
             <div class="filter-label">
               <i class="filter-icon">📅</i> 月份区间
             </div>
@@ -48,6 +48,12 @@
             <select :value="endMonth" @change="e => { endMonth = Number(e.target.value); applyFilters() }">
               <option v-for="m in 12" :key="m" :value="m">{{ m }}月</option>
             </select>
+          </div>
+          <div class="filter-section" v-else>
+            <div class="filter-label" style="color:#c23531;">
+              <i class="filter-icon">📅</i> 月份筛选已禁用
+            </div>
+            <div style="font-size:11px;color:#8b7355;text-align:center;">预测模块使用全年12个月数据</div>
           </div>
           <div class="filter-section">
             <div class="filter-label">
@@ -97,7 +103,7 @@
             <AnalysisPanel :filters="filters" :startMonth="startMonth" :endMonth="endMonth" />
           </dv-border-box-12>
           <dv-border-box-12 v-else-if="currentTab === 'prediction'">
-            <PredictionPanel :filters="filters" :startMonth="startMonth" :endMonth="endMonth" />
+            <PredictionPanel :filters="filters" />
           </dv-border-box-12>
           <dv-border-box-12 v-else-if="currentTab === 'preference'">
             <PreferencePanel :filters="filters" :startMonth="startMonth" :endMonth="endMonth" />
@@ -107,6 +113,15 @@
           </dv-border-box-12>
           <dv-border-box-12 v-else-if="currentTab === 'map'">
             <MapPanel :filters="filters" :startMonth="startMonth" :endMonth="endMonth" />
+          </dv-border-box-12>
+          <dv-border-box-12 v-else-if="currentTab === 'timeline'">
+            <TimelinePanel :filters="filters" :startMonth="startMonth" :endMonth="endMonth" />
+          </dv-border-box-12>
+          <dv-border-box-12 v-else-if="currentTab === 'missing'">
+            <MissingValuesPanel :filters="filters" :startMonth="startMonth" :endMonth="endMonth" />
+          </dv-border-box-12>
+          <dv-border-box-12 v-else-if="currentTab === 'cross'">
+            <CrossCorrelationPanel :filters="filters" :startMonth="startMonth" :endMonth="endMonth" />
           </dv-border-box-12>
         </div>
 
@@ -137,6 +152,9 @@ import PredictionPanel from './components/panels/PredictionPanel.vue'
 import PreferencePanel from './components/panels/PreferencePanel.vue'
 import AdvancedCorrelationPanel from './components/panels/AdvancedCorrelationPanel.vue'
 import MapPanel from './components/panels/MapPanel.vue'
+import MissingValuesPanel from './components/panels/MissingValuesPanel.vue'
+import CrossCorrelationPanel from './components/panels/CrossCorrelationPanel.vue'
+import TimelinePanel from './components/panels/TimelinePanel.vue'
 
 const loading = ref(true)
 const currentTab = ref('overview')
@@ -157,6 +175,9 @@ const tabs = [
   { id: 'preference', label: '偏好分析', icon: '📋' },
   { id: 'correlation', label: '相关性', icon: '🔗' },
   { id: 'map', label: '地图视图', icon: '🗺️' },
+  { id: 'timeline', label: '时间线', icon: '⏱️' },
+  { id: 'missing', label: '缺失值', icon: '🔍' },
+  { id: 'cross', label: '跨维度', icon: '💡' },
 ]
 
 const currentTabLabel = computed(() => tabs.find(t => t.id === currentTab.value)?.label || '图表分析')

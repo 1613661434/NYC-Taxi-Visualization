@@ -20,7 +20,7 @@ def compute_preferences(df):
                   11: "白天", 12: "白天", 13: "白天", 14: "白天", 15: "白天", 16: "白天",
                   17: "晚高峰", 18: "晚高峰", 19: "晚高峰", 20: "夜间", 21: "夜间",
                   22: "夜间", 23: "夜间"}
-    df_copy = df.copy()
+    df_copy = df  # 不需要 copy，load_full_data 已返回副本
     df_copy["时段"] = df_copy["小时"].map(period_map)
     df_copy["小费率"] = np.where(df_copy["车费"] > 0, df_copy["小费"] / df_copy["车费"] * 100, 0)
     tip_by_period = df_copy.groupby(["时段", "车型"])["小费率"].mean().round(1).unstack(fill_value=0)

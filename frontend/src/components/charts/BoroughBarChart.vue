@@ -26,8 +26,8 @@ const doRender = () => {
     animationDuration: 1000, animationEasing: 'cubicOut',
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     grid: { left: 90, right: 60, top: 10, bottom: 10 },
-    xAxis: { type: 'value', name: '订单量(单)', axisLabel: { formatter: v => v>=1000?(v/1000).toFixed(1)+'k':v } },
-    yAxis: { type: 'category', data: borough.map(d=>d[0]).reverse(), axisLabel: { fontSize: 12, fontWeight: 'bold' }, axisLine: { show: false }, axisTick: { show: false } },
+    xAxis: { type: 'value', name: '订单量(单)', axisLabel: { formatter: v => v>=1000?(v/1000).toFixed(1)+'k':v }, nameLocation:'center', nameGap:30, nameTextStyle:{fontSize:13, color:'#5c3d2e', fontWeight:'bold'} },
+    yAxis: { type: 'category', data: borough.map(d=>d[0]).reverse(), name:'行政区', nameLocation:'center', nameGap:80, nameTextStyle:{fontSize:13, color:'#5c3d2e', fontWeight:'bold'}, axisLabel: { fontSize: 12, fontWeight: 'bold' }, axisLine: { show: false }, axisTick: { show: false } },
     series: [{
       data: borough.map(d=>d[1]).reverse(), type: 'bar', barWidth: '55%',
       itemStyle: {

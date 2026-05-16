@@ -11,8 +11,9 @@ from data_loader import load_cleaned_data, load_full_data, apply_filters, load_z
 from analysis.missing_values import analyze_missing_values
 from analysis.clustering import compute_clustering
 from analysis.prediction import train_prediction_model
+from analysis.monthly_prediction import compute_monthly_prediction
 from analysis.preference import compute_preferences
-from analysis.correlation import compute_advanced_correlation
+from analysis.correlation import compute_advanced_correlation, compute_borough_analysis
 from analysis.cross_data import compute_cross_discoveries
 
 app = FastAPI(title="NYC Taxi API")
@@ -27,7 +28,7 @@ app.add_middleware(
 
 def get_filtered_df(use_full=False):
     if use_full:
-        df = load_full_data(sample_size=80000)
+        df = load_full_data()
     else:
         df = load_cleaned_data()
     return df
@@ -161,12 +162,21 @@ def get_prediction_compare(
     company: str = Query(""),
     borough: str = Query("")
 ):
-    df = get_filtered_df(use_full=True)
-    df = apply_filters(df, start_month, end_month, company, borough)
-    if len(df) < 200:
-        return {"error": "数据量不足"}
-    result = train_prediction_model(df)
+    # 复用 /train 的缓存结果，避免重复训练
+    result = cached("pred_train", start_month, end_month, company, borough, train_prediction_model, min_rows=200)
+    if "error" in result:
+        return result
     return {"predictions": result["predictions"], "residual_distribution": result["residual_distribution"], "metrics": result["metrics"]}
+
+
+# ========== 月度时序预测（忽略月份筛选，固定用全年数据）==========
+
+@app.get("/api/prediction/monthly")
+def get_monthly_prediction(
+    company: str = Query(""),
+    borough: str = Query("")
+):
+    return cached("pred_monthly", 1, 12, company, borough, compute_monthly_prediction, min_rows=200)
 
 
 # ========== Req 5: 偏好分析 ==========
@@ -193,18 +203,19 @@ def get_correlation_advanced(
     return cached("correlation", start_month, end_month, company, borough, compute_advanced_correlation)
 
 
-# ========== Req 7: 地图数据 ==========
-
-@app.get("/api/map-data")
-def get_map_data(
+@app.get("/api/borough-analysis")
+def get_borough_analysis(
     start_month: int = Query(1, ge=1, le=12),
     end_month: int = Query(12, ge=1, le=12),
     company: str = Query(""),
     borough: str = Query("")
 ):
-    df = get_filtered_df(use_full=True)
-    df = apply_filters(df, start_month, end_month, company, borough)
+    return cached("borough", start_month, end_month, company, borough, compute_borough_analysis)
 
+
+# ========== Req 7: 地图数据 ==========
+
+def _compute_map_data(df):
     pickup = df.groupby("上车区域ID").agg(
         订单量=("修正后总费用", "count"),
         平均费用=("修正后总费用", "mean"),
@@ -219,7 +230,6 @@ def get_map_data(
     ).fillna(0).round(1)
     dropoff = dropoff.reset_index().rename(columns={"下车区域ID": "location_id"})
 
-    # Zone name lookup
     zone_df = load_zone_lookup()
     zone_info = zone_df[["位置ID", "行政区", "Zone"]].drop_duplicates(subset=["位置ID"])
     zone_info.columns = ["location_id", "行政区", "zone_name"]
@@ -233,6 +243,16 @@ def get_map_data(
         "max_pickup_count": int(pickup["订单量"].max()) if len(pickup) > 0 else 1,
         "max_dropoff_count": int(dropoff["订单量"].max()) if len(dropoff) > 0 else 1,
     }
+
+
+@app.get("/api/map-data")
+def get_map_data(
+    start_month: int = Query(1, ge=1, le=12),
+    end_month: int = Query(12, ge=1, le=12),
+    company: str = Query(""),
+    borough: str = Query("")
+):
+    return cached("map", start_month, end_month, company, borough, _compute_map_data)
 
 
 # ========== Req 8: 时间轴数据 ==========

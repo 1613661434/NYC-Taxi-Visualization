@@ -23,11 +23,15 @@
     <div class="map-card" v-show="ready">
       <div ref="mapChart" class="map-chart"></div>
     </div>
+
+    <div class="chart-explain" v-if="ready && chartMode === 'bar'">
+      <strong>📖 柱状图分析：</strong>{{ barAnalysis }}
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import * as echarts from 'echarts'
 import { fetchMapData } from '../../api/index.js'
 
@@ -128,6 +132,49 @@ const renderMap = () => {
   chartMap.setOption(chartMode.value === 'bar' ? barOption : option, true)
 }
 
+const barAnalysis = computed(() => {
+  const d = mapData.value; if (!d) return ''
+  const current = view.value === 'pickup' ? d.pickup : d.dropoff
+  if (!current?.length) return ''
+  const field = fieldKey(metric.value)
+  const sorted = [...current].sort((a, b) => (b[field] || 0) - (a[field] || 0))
+  const mode = view.value === 'pickup' ? '上车' : '下车'
+  const name = (z) => z.zone_name || '未知区域'
+  const val = (z) => Math.round(z[field] || 0)
+  const boro = (z) => z['行政区'] || '未知'
+
+  const top3 = sorted.slice(0, 3)
+  const totalVal = sorted.reduce((s, z) => s + val(z), 0)
+  const top3Total = top3.reduce((s, z) => s + val(z), 0)
+  const top3Pct = totalVal > 0 ? (top3Total / totalVal * 100).toFixed(0) : 0
+  const gap12 = val(top3[1]) > 0 ? (val(top3[0]) / val(top3[1])).toFixed(1) : 0
+
+  // 行政区集中度
+  const boroMap = {}
+  sorted.forEach(z => { const b = boro(z); boroMap[b] = (boroMap[b] || 0) + val(z) })
+  const topBoro = Object.entries(boroMap).sort((a, b) => b[1] - a[1])[0]
+  const boroPct = topBoro && totalVal > 0 ? (topBoro[1] / totalVal * 100).toFixed(0) : 0
+
+  const metricsLabel = { '订单量': '单', '平均费用': '美元', '平均距离': '英里' }
+  const unit = metricsLabel[metric.value] || ''
+
+  let text = `① ${name(top3[0])}（${boro(top3[0])}）以 ${val(top3[0]).toLocaleString()}${unit} 位居第一，`
+  text += `是第二名 ${name(top3[1])} 的 ${gap12} 倍。`
+  text += `② Top 3 区域合计贡献了全城 ${top3Pct}% 的${mode}${metric.value}，`
+  text += `其中 ${topBoro?.[0]} 独占 ${boroPct}%，为绝对核心。③ `
+
+  if (metric.value === '订单量') {
+    if (mode === '上车') text += '高订单量上车点对应交通枢纽和商业中心，建议在这些区域增加运力调度以减少乘客等待时间。'
+    else text += '下车热点集中在 CBD 和机场，高峰时段拥堵严重，建议关注下车效率对周转率的影响。'
+  } else if (metric.value === '平均费用') {
+    text += '费用最高的区域通常对应机场及远郊区，长途行程的客单价虽高但周转率低，司机需权衡收益效率。'
+  } else {
+    text += '高距离区域集中在机场和郊区，反映了跨区长途出行的空间特征，短途订单虽多但总额贡献有限。'
+  }
+
+  return text
+})
+
 const toggleView = () => {
   chartMode.value = chartMode.value === 'map' ? 'bar' : 'map'
   if (!chartMap) return
@@ -153,4 +200,6 @@ onUnmounted(()=> chartMap?.dispose())
 .controls button:hover:not(.active) { border-color:#8b4513; color:#5c3d2e; }
 .map-card { background:rgba(255,252,245,0.85); border:1px solid rgba(139,69,19,0.1); border-radius:8px; padding:4px; min-height:560px; }
 .map-chart { width:100%; height:560px; }
+.chart-explain { background:rgba(139,69,19,0.05); border-radius:10px; padding:10px 14px; margin-top:12px; font-size:12px; color:#8b7355; line-height:1.7; }
+.chart-explain strong { color:#8b4513; }
 </style>

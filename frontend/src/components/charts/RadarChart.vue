@@ -43,7 +43,7 @@ const doRender = () => {
     series: [{
       type: 'radar',
       data: [
-        { value:[yf,yd,yt,85], name:'黄色出租车', areaStyle:{color:'rgba(194,53,49,0.25)'}, lineStyle:{color:'#c23531',width:2}, itemStyle:{color:'#c23531'}, symbol:'circle', symbolSize:5 },
+        { value:[yf,yd,yt,85], name:'黄色出租车', areaStyle:{color:'rgba(230,180,34,0.25)'}, lineStyle:{color:'#e6b422',width:2}, itemStyle:{color:'#e6b422'}, symbol:'circle', symbolSize:5 },
         { value:[gf,gd,gt,78], name:'绿色出租车', areaStyle:{color:'rgba(74,124,89,0.25)'}, lineStyle:{color:'#4a7c59',width:2}, itemStyle:{color:'#4a7c59'}, symbol:'circle', symbolSize:5 },
       ],
     }],
