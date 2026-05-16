@@ -43,14 +43,14 @@ NYC-Taxi-Visualization/
 
 ```bash
 cd backend
-pip install fastapi uvicorn pandas pyarrow
+pip install scikit-learn pandas numpy fastapi uvicorn
 ```
 
 ### 2. 前端依赖（frontend 目录）
 
 ```bash
 cd frontend
-npm install
+npm install datav-vue3
 ```
 
 ---
